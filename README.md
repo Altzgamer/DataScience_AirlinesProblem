@@ -1,3 +1,5 @@
 # DataScience_AirlinesProblem
 
 Your skills in Data Science became well recognized around the world. And you had been recruited by Yoyoflot Airline Company as external consultant for helping to find potentially suspicions passengers according the new government regulations among the frequent flyers. For the first task you should to perform some data merging and cleaning in dataset obtained from different sources as booking sites, frequent flyers forums, ticket agencies, etc about flights of several suspicious Russian citizens. Download following dataset, merge and clean them, and try to recover some valuable information about travel patterns.
+
+The data are here! https://drive.google.com/drive/folders/19bCT5pKF-QnfW05FW0Eb2dUsMrrnbUSD?usp=sharing
