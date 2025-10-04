@@ -7,18 +7,21 @@ from pathlib import Path
 import time
 import logging
 import re
+from pypdf import PdfReader
 
 # Configuration flags to control which files to process
 PROCESS_CSV = False
 PROCESS_TAB = False
 PROCESS_XML = False
 PROCESS_YAML = False
+PROCESS_PDF = True
 
 # Configuration flags to clear tables before parsing
 CLEAR_CSV = False
 CLEAR_TAB = False
 CLEAR_XML = False
 CLEAR_YAML = False
+CLEAR_PDF = True
 
 
 # File paths
@@ -313,6 +316,67 @@ def parse_yaml_file(cursor: sqlite3.Cursor, yaml_file: str) -> None:
         logger.error(f"Error parsing YAML file: {e}")
         raise
 
+def parse_skyteam_timetable(cursor: sqlite3.Cursor, pdf_file: str) -> None:
+    """Parse the SkyTeam timetable from the extracted PDF text and insert into the table."""
+    try:
+        reader = PdfReader(pdf_file)
+        text = ""
+        for page in reader.pages:
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted + "\n"
+    except Exception as e:
+        logger.error(f"Error extracting text from PDF: {e}")
+        raise
+
+    lines = text.splitlines()
+    i = 0
+    from_city = from_country = from_airport = None
+    to_city = to_country = to_airport = None
+    seen = set()
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith('FROM:'):
+            match = re.search(r'FROM:\s*(.+?),\s*(.+?)\s*(\w{3})', line)
+            if match:
+                from_city, from_country, from_airport = match.groups()
+            seen = set()  # Reset seen for new route
+        elif line.startswith('TO:'):
+            match = re.search(r'TO:\s*(.+?),\s*(.+?)\s*(\w{3})', line)
+            if match:
+                to_city, to_country, to_airport = match.groups()
+        elif re.match(r'\d{2} \w{3}  -  \d{2} \w{3}', line):
+            if from_city and to_city:
+                validity = line.strip()
+                i += 1
+                line = lines[i].strip()
+                parts = re.split(r'\s+', line)
+                if len(parts) >= 2:
+                    days = parts[0]
+                    dep_time = parts[1]
+                else:
+                    days = line
+                    i += 1
+                    dep_time = lines[i].strip()
+                i += 1
+                arr_time = lines[i].strip()
+                i += 1
+                flight = lines[i].strip()
+                i += 1
+                aircraft = lines[i].strip()
+                i += 1
+                travel_time = lines[i].strip()
+                tuple_key = (validity, days, dep_time, arr_time, flight, aircraft, travel_time)
+                if tuple_key not in seen:
+                    seen.add(tuple_key)
+                    cursor.execute('''
+                        INSERT INTO skyteam_timetable (
+                            FromCity, FromCountry, FromAirport, ToCity, ToCountry, ToAirport,
+                            Validity, Days, DepTime, ArrTime, Flight, Aircraft, TravelTime
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (from_city, from_country, from_airport, to_city, to_country, to_airport,
+                          validity, days, dep_time, arr_time, flight, aircraft, travel_time))
+        i += 1
 
 def main():
     """Main function to orchestrate database creation and file parsing."""
@@ -358,6 +422,12 @@ def main():
                 cursor.execute('DELETE FROM skyteam_data')
             logger.info(f"Processing YAML file: {YAML_FILE}")
             parse_yaml_file(cursor, YAML_FILE)
+        if PROCESS_PDF:
+            if CLEAR_PDF:
+                logger.info("Clearing skyteam_timetable table")
+                cursor.execute('DELETE FROM skyteam_timetable')
+            logger.info(f"Processing PDF file: {PDF_FILE}")
+            parse_skyteam_timetable(cursor, PDF_FILE)
 
         # Commit changes and close connection
         conn.commit()
