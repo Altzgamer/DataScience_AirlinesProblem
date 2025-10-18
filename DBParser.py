@@ -5,6 +5,7 @@ from pathlib import Path
 import time
 import logging
 import re
+import os
 import json
 import pdfplumber
 import pandas as pd
@@ -15,13 +16,13 @@ from openpyxl.utils import get_column_letter
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
-PROCESS_CSV = True
-PROCESS_TAB = True
-PROCESS_XML = True
-PROCESS_YAML = True
-PROCESS_PDF = False
+PROCESS_CSV = False
+PROCESS_TAB = False
+PROCESS_XML = False
+PROCESS_YAML = False
+PROCESS_PDF = False #
 PROCESS_JSON = True
-PROCESS_XLS = False
+PROCESS_XLS = True
 
 CLEAR_CSV = False
 CLEAR_TAB = False
@@ -862,7 +863,7 @@ def main():
                 cursor.execute('DELETE FROM skyteam_timetable')
             logger.info(f"Processing PDF file: {PDF_FILE}")
             process_pdf_to_excel(PDF_FILE, "data/Skyteam_Timetable.xlsx", 3)
-            parse_skyteam_timetable(cursor, "data/Skyteam_Timetable.xlsx")
+            #parse_skyteam_timetable(cursor, "data/Skyteam_Timetable.xlsx")
         if PROCESS_JSON:
             if CLEAR_JSON:
                 logger.info("Clearing frequent_flyer_profiles table")
