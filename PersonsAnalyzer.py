@@ -8,9 +8,9 @@ from tkinter import ttk
 from typing import Dict
 
 
-def load_data(path: str = "person_first_n.csv") -> pd.DataFrame:
+def load_data(path: str = "persons.csv") -> pd.DataFrame:
     """Load the person data from a CSV file."""
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, low_memory=False)
     return df
 
 
@@ -338,7 +338,7 @@ def create_interface(df: pd.DataFrame, feature_df: pd.DataFrame):
     recalc_button.pack(padx=10, pady=10)
 
     # Export button
-    def export_to_excel():
+    def export_to_csv():
         result = df.copy().reset_index(drop=True)
         for col in feature_df.columns:
             result[col] = feature_df[col]
@@ -348,11 +348,11 @@ def create_interface(df: pd.DataFrame, feature_df: pd.DataFrame):
             lambda row: assign_group(row, suspicion_thresholds, int(tourist_threshold_entry.get()),
                                      int(regular_traveler_threshold_entry.get()), int(business_threshold_entry.get())),
             axis=1)
-        export_path = os.path.join(os.getcwd(), "suspicious_persons_output.xlsx")
-        result.to_excel(export_path, index=False)
+        export_path = os.path.join(os.getcwd(), "suspicious_persons_output.csv")
+        result.to_csv(export_path, index=False)
         print(f"Exported full table to {export_path}")
 
-    export_button = ttk.Button(root, text="Export to Excel", command=export_to_excel)
+    export_button = ttk.Button(root, text="Export to CSV", command=export_to_csv)
     export_button.pack(padx=10, pady=10)
 
     # Initial population of the listbox
@@ -367,7 +367,7 @@ def create_interface(df: pd.DataFrame, feature_df: pd.DataFrame):
 def main():
     """Run the application to compute suspicion scores."""
     print("Loading data…")
-    df = load_data("person_first_n.csv")
+    df = load_data("persons.csv")
     feature_df = extract_features(df)
     create_interface(df, feature_df)
 

@@ -536,6 +536,8 @@ def merge_person_data(db_path: str) -> None:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', insert_data)
 
+
+
     conn.commit()
     conn.close()
 
@@ -546,6 +548,8 @@ if __name__ == "__main__":
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("VACUUM")
+    cursor.execute("DELETE FROM Person WHERE PersonID = (SELECT MAX(PersonID) FROM Person)")
+    print("The last row has been deleted successfully.")
     conn.commit()
     conn.close()
     print("Database unified successfully.")
